@@ -51,9 +51,9 @@ func TestMovieCreateUnit(t *testing.T) {
 	//prepare json body
 	p := struct {
 		Title       string `json:"title"`
-		ReleaseDate string `json:"release_date"`
+		ReleaseDate string `json:"releaseDate"`
 		Duration    int    `json:"duration"`
-		TrailerUrl  string `json:"trailer_url"`
+		TrailerUrl  string `json:"trailerUrl"`
 	} {
 		Title: "inception",
 		ReleaseDate: "2010-07-18",

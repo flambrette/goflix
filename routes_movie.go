@@ -2,17 +2,18 @@ package main
 
 import (
 	"log"
-	"strconv"
 	"net/http"
+	"strconv"
+
 	"github.com/gorilla/mux"
 )
 
 type jsonMovie struct {
 	Id          int64  `json:"id"`
 	Title       string `json:"title"`
-	ReleaseDate string `json:"release_date"`
+	ReleaseDate string `json:"releaseDate"`
 	Duration    int    `json:"duration"`
-	TrailerUrl  string `json:"trailer_url"`
+	TrailerUrl  string `json:"trailerUrl"`
 }
 
 func (s *server) handleMovieList() http.HandlerFunc {
@@ -23,9 +24,9 @@ func (s *server) handleMovieList() http.HandlerFunc {
 			s.respond(w, r, nil, http.StatusInternalServerError)
 			return
 		}
-		
+
 		var response = make([]jsonMovie, len(movies))
-		for i,m := range movies {
+		for i, m := range movies {
 			response[i] = mapMovieToJson(m)
 		}
 
@@ -56,7 +57,7 @@ func (s *server) handleMovieById() http.HandlerFunc {
 			s.respond(w, r, nil, http.StatusNotFound)
 			return
 		}
-		
+
 		response := mapMovieToJson(movie)
 		s.respond(w, r, response, http.StatusOK)
 	}
@@ -66,9 +67,9 @@ func (s *server) handleMovieCreate() http.HandlerFunc {
 
 	type movieRequest struct {
 		Title       string `json:"title"`
-		ReleaseDate string `json:"release_date"`
+		ReleaseDate string `json:"releaseDate"`
 		Duration    int    `json:"duration"`
-		TrailerUrl  string `json:"trailer_url"`
+		TrailerUrl  string `json:"trailerUrl"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -83,11 +84,11 @@ func (s *server) handleMovieCreate() http.HandlerFunc {
 
 		//create movie
 		m := &Movie{
-			Id: 0,
-			Title: req.Title,
-			ReleaseDate : req.ReleaseDate,
-			Duration: req.Duration,
-			TrailerUrl: req.TrailerUrl,
+			Id:          0,
+			Title:       req.Title,
+			ReleaseDate: req.ReleaseDate,
+			Duration:    req.Duration,
+			TrailerUrl:  req.TrailerUrl,
 		}
 
 		//store movie in db
@@ -104,12 +105,82 @@ func (s *server) handleMovieCreate() http.HandlerFunc {
 	}
 }
 
+func (s *server) handleMovieUpdate() http.HandlerFunc {
+
+	type movieRequest struct {
+		Title       string `json:"title"`
+		ReleaseDate string `json:"releaseDate"`
+		Duration    int    `json:"duration"`
+		TrailerUrl  string `json:"trailerUrl"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id, err := strconv.ParseInt(vars["id"], 10, 64)
+		if err != nil {
+			log.Printf("Id is not a number (id:%v). err=%v\n", id, err)
+			s.respond(w, r, nil, http.StatusBadRequest)
+			return
+		}
+		//decode request
+		req := movieRequest{}
+		err = s.decode(w, r, &req)
+		if err != nil {
+			log.Printf("Cannot parse movie request. err=%v\n", err)
+			s.respond(w, r, nil, http.StatusBadRequest)
+			return
+		}
+
+		//update movie
+		m := &Movie{
+			Id:          id,
+			Title:       req.Title,
+			ReleaseDate: req.ReleaseDate,
+			Duration:    req.Duration,
+			TrailerUrl:  req.TrailerUrl,
+		}
+
+		//store movie in db
+		err = s.store.UpdateMovie(m)
+		if err != nil {
+			log.Printf("Cannot update movie . err=%v\n", err)
+			s.respond(w, r, nil, http.StatusInternalServerError)
+			return
+		}
+
+		var resp = mapMovieToJson(m)
+		s.respond(w, r, resp, http.StatusOK)
+
+	}
+}
+
+func (s *server) handleMovieDeletion() http.HandlerFunc {	
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		id, err := strconv.ParseInt(vars["id"], 10, 64)
+		if err != nil {
+			log.Printf("Id is not a number (id:%v). err=%v\n", id, err)
+			s.respond(w, r, nil, http.StatusBadRequest)
+			return
+		}
+
+		//delete movie in db
+		err = s.store.DeleteMovie(id)
+		if err != nil {
+			log.Printf("Cannot delete movie . err=%v\n", err)
+			s.respond(w, r, nil, http.StatusInternalServerError)
+			return
+		}
+		s.respond(w, r, nil, http.StatusOK)
+	}
+}
+
 func mapMovieToJson(m *Movie) jsonMovie {
 	return jsonMovie{
-		Id: m.Id,
-		Title: m.Title,
-		ReleaseDate : m.ReleaseDate,
-		Duration: m.Duration,
-		TrailerUrl: m.TrailerUrl,
+		Id:          m.Id,
+		Title:       m.Title,
+		ReleaseDate: m.ReleaseDate,
+		Duration:    m.Duration,
+		TrailerUrl:  m.TrailerUrl,
 	}
 }

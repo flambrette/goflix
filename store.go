@@ -14,6 +14,8 @@ type Store interface {
 	GetMovies() ([]*Movie, error)
 	GetMovie(id int64) (*Movie, error)
 	CreateMovie(m *Movie) (error)
+	UpdateMovie(m *Movie) (error)
+	DeleteMovie(id int64) (error)
 }
 
 type dbStore struct {
@@ -72,4 +74,22 @@ func (store *dbStore) CreateMovie(m *Movie) (error){
 	}
 	m.Id, err = res.LastInsertId()
 	return err
+}
+
+func (store *dbStore) UpdateMovie(m *Movie) (error){
+	_, err := store.db.Exec("UPDATE movie SET title = ?, release_date = ?, duration = ?, trailer_url = ? WHERE id = ?",
+		m.Title,m.ReleaseDate,m.Duration, m.TrailerUrl, m.Id)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (store *dbStore) DeleteMovie(id int64) (error){
+	_, err := store.db.Exec("DELETE FROM movie WHERE id = ?", id)
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }
