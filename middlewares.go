@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	//"github.com/golang-jwt/jwt/v5"
 	"github.com/form3tech-oss/jwt-go"
 	jwtmiddleware "github.com/auth0/go-jwt-middleware"
 )

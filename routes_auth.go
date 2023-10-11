@@ -43,12 +43,22 @@ func (s *server) handleTokenCreate() http.HandlerFunc {
 			return
 		}
 
-		if req.Username != "golang" || req.Password != "rocks" {
+		userFound, err := s.store.AuthenticateUser(req.Username, req.Password)
+		if err != nil {
+			msg := fmt.Sprintf("Cannot find user, err=%v", err)
+			s.respond(w, r, responseError{
+				Error: msg,
+			}, http.StatusInternalServerError)
+			return
+		}
+
+		if ! userFound {
 			s.respond(w, r, responseError{
 				Error: "Invalid credentials",
 			}, http.StatusUnauthorized)
 			return
 		}
+
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"username" :req.Username,
 			"exp": time.Now().Add(time.Hour * time.Duration(1)).Unix(),

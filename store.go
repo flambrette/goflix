@@ -16,6 +16,7 @@ type Store interface {
 	CreateMovie(m *Movie) (error)
 	UpdateMovie(m *Movie) (error)
 	DeleteMovie(id int64) (error)
+	AuthenticateUser(username string, password string) (bool, error)
 }
 
 type dbStore struct {
@@ -29,7 +30,18 @@ var schema = `CREATE TABLE IF NOT EXISTS movie
 	release_date TEXT,
 	duration INTEGER,
 	trailer_url TEXT
-)`
+);
+
+CREATE TABLE IF NOT EXISTS user
+(
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username TEXT,
+	password TEXT
+);
+
+INSERT INTO user (username, password) SELECT 'admin', 'admin' 
+WHERE NOT EXISTS (SELECT 1 FROM user WHERE username = 'admin');
+`
 
 func (store *dbStore) Open() error{
 	db, err := sqlx.Connect("sqlite", "goflix.db")
@@ -37,9 +49,7 @@ func (store *dbStore) Open() error{
 		return err
 	}
 	log.Println("Connect to DB")
-
 	db.MustExec(schema)
-
 	store.db = db
 	return nil
 }
@@ -92,4 +102,14 @@ func (store *dbStore) DeleteMovie(id int64) (error){
 	}
 	
 	return nil
+}
+
+func (store *dbStore) AuthenticateUser(username string, password string) (bool, error){
+	var count int
+	err := store.db.Get(&count, "SELECT count(id) FROM user where username =$1 and password =$2", username, password)
+	if err != nil {
+		return false, err
+	}
+	
+	return count == 1, nil
 }
